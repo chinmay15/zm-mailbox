@@ -574,7 +574,9 @@
             <fileset dir="${dev.home}/.ivy2/cache" includes="*${ant.project.name}*"/>
         </delete>
     </target>
-
+	<target name="jar">
+        <!-- temporary -->
+	</target>
     <target name="publish-local" depends="clean-cache,jar,set-dev-version,init-ivy">
       <ivy:publish settingsRef="dev.settings" pubrevision="${dev.version}" resolver="local" overwrite="true" />
     </target>

@@ -241,7 +241,8 @@ public abstract class Provisioning extends ZAttrProvisioning {
 
     public static enum AuthMode {
         PASSWORD,
-        RECOVERY_CODE
+        RECOVERY_CODE,
+        AUTH_PIC
     }
 
     public static final String AUTH_MODE_KEY = "authMode";

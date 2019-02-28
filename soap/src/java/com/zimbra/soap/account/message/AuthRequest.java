@@ -105,6 +105,12 @@ public class AuthRequest {
     private String recoveryCode;
 
     /**
+     * @zm-api-field-description AuthPic to use to login
+     */
+    @XmlElement(name=AccountConstants.E_AUTH_PIC, required=false)
+    private String authPic;
+
+    /**
      * @zm-api-field-description &lt;preauth> is an alternative to &lt;account>.  See preauth.txt
      */
     @XmlElement(name=AccountConstants.E_PREAUTH /* preauth */, required=false)
@@ -230,6 +236,9 @@ public class AuthRequest {
 
     public String getRecoveryCode() { return recoveryCode; }
     public AuthRequest setRecoveryCode(String recoveryCode) { this.recoveryCode = recoveryCode; return this; }
+
+    public String getAuthPic() { return authPic; }
+    public AuthRequest setAuthPic(String authPic) { this.authPic= authPic; return this; }
 
     public PreAuth getPreauth() { return preauth; }
     public AuthRequest setPreauth(PreAuth preauth) { this.preauth = preauth; return this; }

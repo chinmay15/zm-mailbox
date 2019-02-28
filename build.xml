@@ -51,26 +51,26 @@
 <!-- Code added to parse regex provided in version zimbra.buildinfo.version -->
     <taskdef resource="net/sf/antcontrib/antlib.xml">
         <classpath>
-		<pathelement location="${user.home}/.zcs-deps/ant-contrib-1.0b1.jar"/>
+        <pathelement location="${user.home}/.zcs-deps/ant-contrib-1.0b1.jar"/>
         </classpath>
     </taskdef>
-	<propertyregex property="zimbra.buildinfo.majorversion"
-	               input="${zimbra.buildinfo.version}"
-	               regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
-	               select="\1"
-	               casesensitive="false" />
+    <propertyregex property="zimbra.buildinfo.majorversion"
+                   input="${zimbra.buildinfo.version}"
+                   regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
+                   select="\1"
+                   casesensitive="false" />
 
-	<propertyregex property="zimbra.buildinfo.minorversion"
-	               input="${zimbra.buildinfo.version}"
-	               regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
-	               select="\2"
-	               casesensitive="false" />
+    <propertyregex property="zimbra.buildinfo.minorversion"
+                   input="${zimbra.buildinfo.version}"
+                   regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
+                   select="\2"
+                   casesensitive="false" />
 
-	<propertyregex property="zimbra.buildinfo.microversion"
-	               input="${zimbra.buildinfo.version}"
-	               regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
-	               select="\3"
-	               casesensitive="false" />
+    <propertyregex property="zimbra.buildinfo.microversion"
+                   input="${zimbra.buildinfo.version}"
+                   regexp="([0-9]+)\.([0-9]+)\.([0-9]+)"
+                   select="\3"
+                   casesensitive="false" />
 
 <!-- Property defined to accept the version -->
 
@@ -107,4 +107,21 @@
       <delete dir="build/dist"/>
       <delete dir="build/stage"/>
    </target>
+    <target name="dev-deploy-all">
+    <ant dir="./native" target="clean" inheritAll="false"/>
+            <ant dir="./native" target="publish-local" inheritAll="false"/>
+        <ant dir="./native" target="deploy-no-start" inheritAll="false"/>
+        <ant dir="./common" target="clean" inheritAll="false"/>
+        <ant dir="./common" target="publish-local" inheritAll="false"/>
+        <ant dir="./common" target="deploy-no-start" inheritAll="false"/>
+        <ant dir="./soap" target="clean" inheritAll="false"/>
+        <ant dir="./soap" target="publish-local" inheritAll="false"/>
+        <ant dir="./soap" target="deploy-no-start" inheritAll="false"/>
+        <ant dir="./client" target="clean" inheritAll="false"/>
+        <ant dir="./client" target="publish-local" inheritAll="false"/>
+        <ant dir="./client" target="deploy-no-start" inheritAll="false"/>
+        <ant dir="./store" target="clean" inheritAll="false"/>
+        <ant dir="./store" target="publish-local" inheritAll="false"/>
+        <ant dir="./store"  target="deploy" inheritAll="false"/>
+    </target>
 </project>

@@ -20,10 +20,10 @@
     </chain>
     <!-- 'build-tmp' resolver is not part of the chain and is used only for packaging war files -->
     <filesystem name="build-tmp">
-      <artifact pattern="${build.tmp.dir}/[module]-[revision].[ext]" />
+      <artifact pattern="${dev.home}/[module]-[revision].[ext]" />
     </filesystem>
     <filesystem name="build-dist">
-      <artifact pattern="${dist.dir}/[module]-[revision].[ext]" />
+      <artifact pattern="${dev.home}/[module]-[revision].[ext]" />
     </filesystem>
   </resolvers>
      <modules>
