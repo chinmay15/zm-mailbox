@@ -115,5 +115,7 @@
   <dependency org="com.google.javascript" name="closure-compiler" rev="v20180204"/>
   <dependency org="com.github.zafarkhaja" name="java-semver" rev="0.9.0"/>
   <dependency org="org.bytedeco.javacpp-presets" name="opencv-platform" rev="4.0.1-1.4.4"/>
+  <dependency org="org.bytedeco.javacpp-presets" name="opencv" rev="4.0.1-1.4.4"/>
+  <dependency org="org.bytedeco" name="javacpp" rev="1.4.4"/>
  </dependencies>
 </ivy-module>

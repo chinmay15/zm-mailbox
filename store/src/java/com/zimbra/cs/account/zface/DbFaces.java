@@ -48,39 +48,6 @@ public class DbFaces {
         }
     }
 
-    public static class Face {
-        private int id;
-        private String accountId;
-        private String base64pic;
-        @SuppressWarnings("unused")
-        private Face() {
-            // private default constructor to avoid usage
-        }
-        public Face(int id, String accountId, String base64pic) {
-            this.id = id;
-            this.accountId = accountId;
-            this.base64pic = base64pic;
-        }
-        public int getId() {
-            return id;
-        }
-        public void setId(int id) {
-            this.id = id;
-        }
-        public String getAccountId() {
-            return accountId;
-        }
-        public void setAccountId(String accountId) {
-            this.accountId = accountId;
-        }
-        public String getBase64pic() {
-            return base64pic;
-        }
-        public void setBase64pic(String base64pic) {
-            this.base64pic = base64pic;
-        }
-    }
-
     public static void set(String accountId, String base64pic) throws ServiceException, IOException {
         String userDirPath = PATH_DIR_FACES + "/" + accountId;
         File userDir = new File(userDirPath);
