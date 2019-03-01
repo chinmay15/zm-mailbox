@@ -47,7 +47,7 @@ public class AddFaces extends AccountDocumentHandler {
 
         Account acct = at.getAccount();
         boolean status = acct.isAccountStatusActive();
-        if (status) {
+        if (!status) {
             throw AccountServiceException.ACCOUNT_INACTIVE(acct.getName());
         }
 
