@@ -16,38 +16,124 @@
  */
 package com.zimbra.cs.account.zface;
 
+import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.opencv_java;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfInt;
+import org.opencv.face.EigenFaceRecognizer;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import com.zimbra.common.account.Key.AccountBy;
-import com.zimbra.common.service.ServiceException;
 import com.zimbra.cs.account.Account;
 import com.zimbra.cs.account.Provisioning;
-import com.zimbra.cs.account.zface.DbFaces.Face;
 
 public class FaceAuth {
-    private static List<Face> faces = new ArrayList<Face>();
-    static {
-        try {
-            faces = DbFaces.getAll();
-        } catch (ServiceException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
+	static EigenFaceRecognizer efr;
+	static Map<String, Integer> accountLableMap = new ConcurrentHashMap<String, Integer>();
+	static {
+		efr = EigenFaceRecognizer.create();
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+		Runnable taskTrainFace = () -> {
+			try {
+				training();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		};
+		executor.scheduleAtFixedRate(taskTrainFace, 0, 300000, TimeUnit.MILLISECONDS);
+	}
 
-    public static Account authenticate(Provisioning prov, String authPic)
-            throws ServiceException {
-        // TODO verify base64 data received as password with faces list
-        Face result = faces.stream().filter(face -> validatePic(face)).findFirst().orElse(null);
-        if (result == null) {
-            return null;
-        }
-        Account account = prov.get(AccountBy.id, result.getAccountId());
-        return account;
-    }
+	public static Account authenticate(Provisioning prov, String authPic) throws Exception {
+		// TODO verify base64 data received as password with faces list
+		String accountId = validatePic(authPic);
+		if (accountId == null) {
+			return null;
+		}
+		Account account = prov.get(AccountBy.id, accountId);
+		return account;
+	}
 
-    private static boolean validatePic(Face face) {
-        return true;
-    }
+	private static String convertBase64ToJPG(String string) throws Exception {
+		byte[] imageByte;
+		String basePath = "/tmp/";
+		String fileName = "input.jpg";
+		Base64.Decoder base64Decoder = Base64.getDecoder();
+		imageByte = base64Decoder.decode(string);
+		File imageFile = new File(basePath + fileName);
+
+		OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(imageFile));
+		outputStream.write(imageByte);
+		outputStream.close();
+		return basePath + fileName;
+	}
+
+	private static String validatePic(String base64Input) throws Exception {
+		String path = convertBase64ToJPG(base64Input);
+		Mat readImage = Imgcodecs.imread(path, 0);
+
+		int[] outLabel = new int[1];
+		double[] outConf = new double[1];
+		System.out.println("Starting Prediction...");
+		efr.predict(readImage, outLabel, outConf);
+
+		System.out.println("***Predicted label is " + outLabel[0] + ".***");
+
+		System.out.println("***Confidence value is " + outConf[0] + ".***");
+
+		int predictedLable = outLabel[0];
+
+		for (String currentKey : accountLableMap.keySet()) {
+			if (accountLableMap.get(currentKey) == predictedLable) {
+				return currentKey;
+			}
+		}
+		return null;
+	}
+
+	private static void training() throws Exception {
+		ArrayList<Mat> images = new ArrayList<>();
+
+		ArrayList<Integer> labels = new ArrayList<>();
+		String basePath = "/opt/zimbra/data/faces/";
+		File folder = new File(basePath);
+		for (File fileInFolders : folder.listFiles()) {
+			int current = 0;
+			String accountId = null;
+			if (fileInFolders.isDirectory()) {
+				accountId = fileInFolders.getName();
+				for (File imagesForUser : fileInFolders.listFiles()) {
+					Mat readImage = Imgcodecs.imread(imagesForUser.getAbsolutePath(), 0);
+					images.add(readImage);
+				}
+			}
+			labels.add(current);
+			accountLableMap.put(accountId, current);
+			current++;
+		}
+
+		Loader.load(opencv_java.class);
+		System.out.println("Library loaded!!");
+		System.out.println("Number of images " + images.size());
+		MatOfInt labelsMat = new MatOfInt();
+		labelsMat.fromList(labels);
+
+		System.out.println("Starting training...");
+		efr.train(images, labelsMat);
+
+	}
 }
