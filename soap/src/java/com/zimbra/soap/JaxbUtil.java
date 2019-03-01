@@ -78,6 +78,8 @@ public final class JaxbUtil {
 
     static {
         MESSAGE_CLASSES = new Class<?>[] {
+            com.zimbra.soap.account.message.AddFacesRequest.class,
+            com.zimbra.soap.account.message.AddFacesResponse.class,
             com.zimbra.soap.account.message.AuthRequest.class,
             com.zimbra.soap.account.message.AuthResponse.class,
             com.zimbra.soap.account.message.AutoCompleteGalRequest.class,

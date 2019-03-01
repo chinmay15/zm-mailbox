@@ -601,6 +601,11 @@ public class AccountConstants {
     public static final String E_RESET_PASSWORD_RESPONSE = "ResetPasswordResponse";
     public static final QName RESET_PASSWORD_REQUEST = QName.get(E_RESET_PASSWORD_REQUEST, NAMESPACE);
 
+    // Password reset feature
+    public static final String E_ADD_FACES_REQUEST = "AddFacesRequest";
+    public static final String E_ADD_FACES_RESPONSE = "AddFacesResponse";
+    public static final QName ADD_FACES_REQUEST = QName.get(E_ADD_FACES_REQUEST, NAMESPACE);
+
     //Hab
     public static final String A_HAB_ROOT_GROUP_ID = "habRootGroupId";
     public static final String E_HAB_GROUP = "habGroup";

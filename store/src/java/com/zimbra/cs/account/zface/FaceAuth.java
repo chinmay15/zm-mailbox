@@ -48,6 +48,6 @@ public class FaceAuth {
     }
 
     private static boolean validatePic(Face face) {
-        return false;
+        return true;
     }
 }

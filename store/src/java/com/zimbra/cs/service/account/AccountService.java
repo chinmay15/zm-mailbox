@@ -31,6 +31,7 @@ import com.zimbra.common.soap.Element.KeyValuePair;
 import com.zimbra.common.util.StringUtil;
 import com.zimbra.soap.DocumentDispatcher;
 import com.zimbra.soap.DocumentService;
+import com.zimbra.soap.account.message.AddFacesRequest;
 
 /**
  *
@@ -113,6 +114,8 @@ public class AccountService implements DocumentService {
         // reset password
         dispatcher.registerHandler(AccountConstants.RESET_PASSWORD_REQUEST, new ResetPassword());
 
+        // zface
+        dispatcher.registerHandler(AccountConstants.ADD_FACES_REQUEST, new AddFaces());
     }
 
     /**
