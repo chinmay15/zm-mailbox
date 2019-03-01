@@ -31,6 +31,7 @@ import com.zimbra.common.service.ServiceException;
 public class DbFaces {
     public static final String DIR_FACES = "faces";
     public static final String PATH_DIR_FACES = LC.zimbra_data_directory.value() + "/" + DIR_FACES;
+    public static final String TRAINING_RESULT = LC.zimbra_data_directory.value() + "/" + "result.yml";
 
     static {
         File dir = new File(PATH_DIR_FACES);

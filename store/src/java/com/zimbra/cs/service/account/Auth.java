@@ -288,7 +288,8 @@ public class Auth extends AccountDocumentHandler {
 
         Boolean registerTrustedDevice = false;
         if (mode.equals(AuthMode.AUTH_PIC)) {
-            acct = FaceAuth.authenticate(prov, authPic);
+            FaceAuth auth = new FaceAuth();
+            acct = auth.authenticate(prov, authPic);
             if (acct == null) {
                 throw AuthFailedServiceException.AUTH_FAILED("Authentication picture could not be verified.");
             }

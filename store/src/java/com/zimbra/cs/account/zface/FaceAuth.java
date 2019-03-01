@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.opencv_java;
@@ -43,22 +41,21 @@ import com.zimbra.cs.account.Account;
 import com.zimbra.cs.account.Provisioning;
 
 public class FaceAuth {
-    static EigenFaceRecognizer efr;
-    static Map<String, Integer> accountLableMap = new ConcurrentHashMap<String, Integer>();
+    public FaceAuth() {
+        // nothing for now
+    }
+    private static EigenFaceRecognizer efr;
+    private static Map<String, Integer> accountLableMap = new ConcurrentHashMap<String, Integer>();
     static {
+        ZimbraLog.soap.debug("before loading");
+        Loader.load(opencv_java.class);
+        ZimbraLog.soap.debug("loading finished");
         efr = EigenFaceRecognizer.create();
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        Runnable taskTrainFace = () -> {
-            try {
-                training();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        };
-        executor.scheduleAtFixedRate(taskTrainFace, 0, 300000, TimeUnit.MILLISECONDS);
+        ZimbraLog.soap.debug("efr created, calling training()");
+        training();
     }
 
-    public static Account authenticate(Provisioning prov, String authPic) throws ServiceException {
+    public Account authenticate(Provisioning prov, String authPic) throws ServiceException {
         // TODO verify base64 data received as password with faces list
         String accountId = null;
         try {
@@ -73,7 +70,7 @@ public class FaceAuth {
         return account;
     }
 
-    private static String convertBase64ToJPG(String string) throws IOException {
+    private String convertBase64ToJPG(String string) throws IOException {
         byte[] imageByte;
         String basePath = "/tmp/";
         String fileName = "input.jpg";
@@ -87,13 +84,14 @@ public class FaceAuth {
         return basePath + fileName;
     }
 
-    private static String validatePic(String base64Input) throws IOException {
+    private String validatePic(String base64Input) throws IOException {
         String path = convertBase64ToJPG(base64Input);
         Mat readImage = Imgcodecs.imread(path, 0);
 
         int[] outLabel = new int[1];
         double[] outConf = new double[1];
         ZimbraLog.soap.debug("starting prediction");
+        efr.read(DbFaces.TRAINING_RESULT);
         efr.predict(readImage, outLabel, outConf);
 
         ZimbraLog.soap.debug("***Predicted label is " + outLabel[0] + ".***");
@@ -111,33 +109,40 @@ public class FaceAuth {
     }
 
     private static void training() {
-        ZimbraLog.soap.debug("starting training");
-        ArrayList<Mat> images = new ArrayList<>();
+        ZimbraLog.soap.debug("in training method");
+        List<Mat> images = new ArrayList<>();
 
-        ArrayList<Integer> labels = new ArrayList<>();
+        List<Integer> labels = new ArrayList<>();
         String basePath = DbFaces.PATH_DIR_FACES;
+        ZimbraLog.soap.debug("before looping on ");
         File folder = new File(basePath);
         for (File fileInFolders : folder.listFiles()) {
-            int current = 0;
+            int current = 1;
             String accountId = null;
             if (fileInFolders.isDirectory()) {
                 accountId = fileInFolders.getName();
-                for (File imagesForUser : fileInFolders.listFiles()) {
-                    Mat readImage = Imgcodecs.imread(imagesForUser.getAbsolutePath(), 0);
+                for (String name : fileInFolders.list()) {
+                    String filePath = basePath + "/" + accountId + "/" + name;
+                    ZimbraLog.soap.debug("File to be read : " + filePath);
+                    Mat readImage = Imgcodecs.imread(filePath, 0);
                     images.add(readImage);
+                    labels.add(Integer.valueOf(current));
                 }
             }
-            labels.add(current);
             accountLableMap.put(accountId, current);
             current++;
         }
 
-        Loader.load(opencv_java.class);
+        ZimbraLog.soap.debug("before mat of int");
         MatOfInt labelsMat = new MatOfInt();
+        ZimbraLog.soap.debug("lables size : " + labels.size());
         labelsMat.fromList(labels);
+        ZimbraLog.soap.debug("mat size : " + labelsMat.rows());
 
+        ZimbraLog.soap.debug("starting training");
         efr.train(images, labelsMat);
-
-        ZimbraLog.soap.debug("finished training");
+        ZimbraLog.soap.debug("training finished, writing in file now");
+        efr.write(DbFaces.TRAINING_RESULT);
+        ZimbraLog.soap.debug("finished writing");
     }
 }
