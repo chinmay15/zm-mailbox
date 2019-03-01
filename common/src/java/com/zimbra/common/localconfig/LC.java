@@ -64,7 +64,10 @@ public final class LC {
     public static final KnownKey zimbra_db_directory = KnownKey.newKey("${zimbra_home}/db");
 
     @Supported
-    public static final KnownKey zimbra_tmp_directory = KnownKey.newKey("${zimbra_home}/data/tmp");
+    public static final KnownKey zimbra_data_directory = KnownKey.newKey("${zimbra_home}/data");
+
+    @Supported
+    public static final KnownKey zimbra_tmp_directory = KnownKey.newKey("${zimbra_data_directory}/tmp");
 
     @Supported
     public static final KnownKey zimbra_extension_directory = KnownKey.newKey("${zimbra_home}/lib/ext");

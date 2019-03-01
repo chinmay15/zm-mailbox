@@ -16,22 +16,37 @@
  */
 package com.zimbra.cs.account.zface;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
+import com.zimbra.common.localconfig.LC;
 import com.zimbra.common.service.ServiceException;
-import com.zimbra.cs.db.DbPool;
-import com.zimbra.cs.db.DbPool.DbConnection;
 
 public class DbFaces {
+    public static final String DIR_FACES = "faces";
+    public static final String PATH_DIR_FACES = LC.zimbra_data_directory.value() + DIR_FACES;
 
-    private static final String TABLE_NAME = "faces";
-    private static final String COLUMN_ID = "id";
-    private static final String COLUMN_ACCOUNT_ID = "account_id";
-    private static final String COLUMN_PIC = "pic";
+    static {
+        File dir = new File(PATH_DIR_FACES);
+        if (!dir.exists()) {
+            if (!dir.mkdir()) {
+                throw new RuntimeException("Failed to create: " + PATH_DIR_FACES);
+            }
+        } else {
+            if (!dir.isDirectory()) {
+                throw new RuntimeException(PATH_DIR_FACES + " : is not a directory");
+            }
+            if (!(dir.canRead() && dir.canWrite())) {
+                throw new RuntimeException(PATH_DIR_FACES + " : does not have required permissions");
+            }
+        }
+    }
 
     public static class Face {
         private int id;
@@ -66,105 +81,59 @@ public class DbFaces {
         }
     }
 
-    public static void set(String accountId, String base64pic) throws ServiceException {
-        DbConnection conn = DbPool.getConnection();
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement("INSERT INTO " + TABLE_NAME + "(" + COLUMN_ACCOUNT_ID + ", " + COLUMN_PIC + ") VALUES (?, ?)");
-            stmt.setString(1, accountId);
-            stmt.setString(2, base64pic);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw ServiceException.FAILURE("writing faces entry: " + accountId, e);
-        } finally {
-            DbPool.closeStatement(stmt);
-            DbPool.quietClose(conn);
-        }
-    }
-
-    public static boolean delete(String accountId, int id) throws ServiceException {
-        DbConnection conn = DbPool.getConnection();
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement("DELETE FROM " + TABLE_NAME + " WHERE " + COLUMN_ACCOUNT_ID + " = ? and " + COLUMN_ID + " = ?");
-            stmt.setString(1, accountId);
-            stmt.setInt(2, id);
-            int num = stmt.executeUpdate();
-            return num == 1;
-        } catch (SQLException e) {
-            throw ServiceException.FAILURE("deleting config entry for " + accountId + " with id " + id, e);
-        } finally {
-            DbPool.closeStatement(stmt);
-            DbPool.quietClose(conn);
-        }
-    }
-
-    public static Face get(int id) throws ServiceException {
-        DbConnection conn = DbPool.getConnection();
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = conn.prepareStatement("SELECT * FROM " + TABLE_NAME + " WHERE " + COLUMN_ID + " = ?");
-            stmt.setInt(1, id);
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                int dbId = rs.getInt(COLUMN_ID);
-                String accountId = rs.getString(COLUMN_ACCOUNT_ID);
-                String base64pic = rs.getString(COLUMN_PIC);
-                return new Face(dbId, accountId, base64pic);
+    public static void set(String accountId, String base64pic) throws ServiceException, IOException {
+        String userDirPath = PATH_DIR_FACES + "/" + accountId;
+        File userDir = new File(userDirPath);
+        if (!userDir.exists()) {
+            if (!userDir.mkdir()) {
+                throw ServiceException.FAILURE("Failed to create: " + userDirPath, null);
             }
-        } catch (SQLException e) {
-            throw ServiceException.FAILURE("getting config entry: " + id, e);
-        } finally {
-            DbPool.closeResults(rs);
-            DbPool.closeStatement(stmt);
-            DbPool.quietClose(conn);
+        } else {
+            if (!userDir.isDirectory()) {
+                throw ServiceException.FAILURE(userDirPath + " : is not a directory", null);
+            }
+            if (!(userDir.canRead() && userDir.canWrite())) {
+                throw ServiceException.FAILURE(userDirPath + " : does not have required permissions", null);
+            }
         }
-        return null;
+
+        Base64.Decoder base64Decoder = Base64.getDecoder();
+        String fileName = System.currentTimeMillis() + ".jpg";
+        byte [] imageByte = base64Decoder.decode(base64pic);
+        File imageFile = new File(userDirPath + fileName);
+        if (!imageFile.createNewFile()) {
+            throw new RuntimeException("Failed to create: " + userDirPath + fileName);
+        }
+        OutputStream os = new BufferedOutputStream(new FileOutputStream(imageFile));
+        os.write(imageByte);
+        os.close();
     }
 
-    public static List<Face> getAllForAccount(String accountId) throws ServiceException {
-        DbConnection conn = DbPool.getConnection();
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = conn.prepareStatement("SELECT * FROM " + TABLE_NAME + " WHERE " + COLUMN_ACCOUNT_ID + " = ?");
-            stmt.setString(1, accountId);
-            rs = stmt.executeQuery();
-            List<Face> list = new ArrayList<Face>();
-            while (rs.next()) {
-                Face face = new Face(rs.getInt(COLUMN_ID), rs.getString(COLUMN_ACCOUNT_ID), rs.getString(COLUMN_PIC));
-                list.add(face);
-            }
-            return list;
-        } catch (SQLException e) {
-            throw ServiceException.FAILURE("getting all config entries", e);
-        } finally {
-            DbPool.closeResults(rs);
-            DbPool.closeStatement(stmt);
-            DbPool.quietClose(conn);
+    public static boolean delete(String accountId, String fileName) throws ServiceException {
+        File imageFile = new File(PATH_DIR_FACES + "/" + accountId + "/" + fileName);
+        if (!imageFile.exists()) {
+            throw ServiceException.FAILURE("Image file does not exist : " + fileName, null);
         }
+        if (!imageFile.delete()) {
+            throw ServiceException.FAILURE("Failed to delete image file : " + fileName, null);
+        }
+        return true;
     }
 
-    public static List<Face> getAll() throws ServiceException {
-        DbConnection conn = DbPool.getConnection();
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = conn.prepareStatement("SELECT * FROM " + TABLE_NAME);
-            rs = stmt.executeQuery();
-            List<Face> list = new ArrayList<Face>();
-            while (rs.next()) {
-                Face face = new Face(rs.getInt(COLUMN_ID), rs.getString(COLUMN_ACCOUNT_ID), rs.getString(COLUMN_PIC));
-                list.add(face);
-            }
-            return list;
-        } catch (SQLException e) {
-            throw ServiceException.FAILURE("getting all config entries", e);
-        } finally {
-            DbPool.closeResults(rs);
-            DbPool.closeStatement(stmt);
-            DbPool.quietClose(conn);
+    public static File get(String accountId, String fileName) throws ServiceException {
+        File imageFile = new File(PATH_DIR_FACES + "/" + accountId + "/" + fileName);
+        if (!imageFile.exists()) {
+            throw ServiceException.FAILURE("Image file does not exist : " + fileName, null);
         }
+        return imageFile;
+    }
+
+    public static List<File> getAllForAccount(String accountId) throws ServiceException {
+        String userDirPath = PATH_DIR_FACES + "/" + accountId;
+        File userDir = new File(userDirPath);
+        if (!userDir.exists()) {
+            throw ServiceException.NOT_FOUND("Missing : " + userDirPath);
+        }
+        return Arrays.asList(userDir.listFiles());
     }
 }

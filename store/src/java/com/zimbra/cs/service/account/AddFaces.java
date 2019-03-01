@@ -17,6 +17,7 @@
 
 package com.zimbra.cs.service.account;
 
+import java.io.IOException;
 import java.util.Map;
 
 import com.zimbra.common.service.ServiceException;
@@ -65,7 +66,11 @@ public class AddFaces extends AccountDocumentHandler {
             }
         }
 
-        DbFaces.set(acct.getId(), req.getAuthPic());
+        try {
+            DbFaces.set(acct.getId(), req.getAuthPic());
+        } catch (IOException ioe) {
+            throw ServiceException.FAILURE("Exception occured while storing image.", ioe);
+        }
 
         Element response = zsc.createElement(AccountConstants.E_ADD_FACES_RESPONSE);
         return response;
