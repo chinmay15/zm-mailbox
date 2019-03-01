@@ -38,6 +38,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 
 import com.zimbra.common.account.Key.AccountBy;
 import com.zimbra.common.service.ServiceException;
+import com.zimbra.common.util.ZimbraLog;
 import com.zimbra.cs.account.Account;
 import com.zimbra.cs.account.Provisioning;
 
@@ -92,12 +93,12 @@ public class FaceAuth {
 
         int[] outLabel = new int[1];
         double[] outConf = new double[1];
-        System.out.println("Starting Prediction...");
+        ZimbraLog.soap.debug("starting prediction");
         efr.predict(readImage, outLabel, outConf);
 
-        System.out.println("***Predicted label is " + outLabel[0] + ".***");
+        ZimbraLog.soap.debug("***Predicted label is " + outLabel[0] + ".***");
 
-        System.out.println("***Confidence value is " + outConf[0] + ".***");
+        ZimbraLog.soap.debug("***Confidence value is " + outConf[0] + ".***");
 
         int predictedLable = outLabel[0];
 
@@ -110,10 +111,11 @@ public class FaceAuth {
     }
 
     private static void training() {
+        ZimbraLog.soap.debug("starting training");
         ArrayList<Mat> images = new ArrayList<>();
 
         ArrayList<Integer> labels = new ArrayList<>();
-        String basePath = "/opt/zimbra/data/faces/";
+        String basePath = DbFaces.PATH_DIR_FACES;
         File folder = new File(basePath);
         for (File fileInFolders : folder.listFiles()) {
             int current = 0;
@@ -131,13 +133,11 @@ public class FaceAuth {
         }
 
         Loader.load(opencv_java.class);
-        System.out.println("Library loaded!!");
-        System.out.println("Number of images " + images.size());
         MatOfInt labelsMat = new MatOfInt();
         labelsMat.fromList(labels);
 
-        System.out.println("Starting training...");
         efr.train(images, labelsMat);
 
+        ZimbraLog.soap.debug("finished training");
     }
 }

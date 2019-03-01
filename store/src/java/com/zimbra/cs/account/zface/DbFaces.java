@@ -30,7 +30,7 @@ import com.zimbra.common.service.ServiceException;
 
 public class DbFaces {
     public static final String DIR_FACES = "faces";
-    public static final String PATH_DIR_FACES = LC.zimbra_data_directory.value() + DIR_FACES;
+    public static final String PATH_DIR_FACES = LC.zimbra_data_directory.value() + "/" + DIR_FACES;
 
     static {
         File dir = new File(PATH_DIR_FACES);
@@ -67,7 +67,7 @@ public class DbFaces {
         Base64.Decoder base64Decoder = Base64.getDecoder();
         String fileName = System.currentTimeMillis() + ".jpg";
         byte [] imageByte = base64Decoder.decode(base64pic);
-        File imageFile = new File(userDirPath + fileName);
+        File imageFile = new File(userDirPath + "/" + fileName);
         if (!imageFile.createNewFile()) {
             throw new RuntimeException("Failed to create: " + userDirPath + fileName);
         }
