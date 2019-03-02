@@ -52,6 +52,7 @@ import com.zimbra.common.util.RemoteIP;
 import com.zimbra.common.util.ZimbraLog;
 import com.zimbra.common.util.ZimbraServletOutputStream;
 import com.zimbra.cs.account.Provisioning;
+import com.zimbra.cs.account.zface.FaceAuth;
 import com.zimbra.cs.servlet.ZimbraServlet;
 import com.zimbra.cs.stats.ZimbraPerf;
 import com.zimbra.cs.util.Zimbra;
@@ -97,6 +98,7 @@ public class SoapServlet extends ZimbraServlet {
     @Override
     public void init() throws ServletException {
         LogFactory.init();
+        FaceAuth.init();
 
         String name = getServletName();
         ZimbraLog.soap.info("Servlet " + name + " starting up");

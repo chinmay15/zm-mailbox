@@ -35,14 +35,6 @@ import com.zimbra.soap.ZimbraSoapContext;
 import com.zimbra.soap.account.message.AddFacesRequest;
 
 public class AddFaces extends AccountDocumentHandler {
-    static {
-        try {
-            ClassLoader.getSystemClassLoader().loadClass("com.zimbra.cs.account.zface.FaceAuth");
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
     public Element handle(Element request, Map<String, Object> context) throws ServiceException {
         Provisioning prov = Provisioning.getInstance();
         ZimbraSoapContext zsc = getZimbraSoapContext(context);

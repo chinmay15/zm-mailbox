@@ -45,8 +45,10 @@ public class FaceAuth {
         // nothing for now
     }
     private static EigenFaceRecognizer efr;
-    private static Map<String, Integer> accountLableMap = new ConcurrentHashMap<String, Integer>();
-    static {
+    private static Map<Integer, String> accountLableMap = new ConcurrentHashMap<Integer, String>();
+    private static final String TEMP_FILE_NAME = "/tmp/auth.jpg";
+
+    public static void init() {
         ZimbraLog.soap.debug("before loading");
         Loader.load(opencv_java.class);
         ZimbraLog.soap.debug("loading finished");
@@ -70,23 +72,20 @@ public class FaceAuth {
         return account;
     }
 
-    private String convertBase64ToJPG(String string) throws IOException {
+    private void convertBase64ToJPG(String string) throws IOException {
         byte[] imageByte;
-        String basePath = "/tmp/";
-        String fileName = "input.jpg";
         Base64.Decoder base64Decoder = Base64.getDecoder();
         imageByte = base64Decoder.decode(string);
-        File imageFile = new File(basePath + fileName);
+        File imageFile = new File(TEMP_FILE_NAME);
 
         OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(imageFile));
         outputStream.write(imageByte);
         outputStream.close();
-        return basePath + fileName;
     }
 
     private String validatePic(String base64Input) throws IOException {
-        String path = convertBase64ToJPG(base64Input);
-        Mat readImage = Imgcodecs.imread(path, 0);
+        convertBase64ToJPG(base64Input);
+        Mat readImage = Imgcodecs.imread(TEMP_FILE_NAME, 0);
 
         int[] outLabel = new int[1];
         double[] outConf = new double[1];
@@ -95,17 +94,12 @@ public class FaceAuth {
         efr.predict(readImage, outLabel, outConf);
 
         ZimbraLog.soap.debug("***Predicted label is " + outLabel[0] + ".***");
-
         ZimbraLog.soap.debug("***Confidence value is " + outConf[0] + ".***");
 
         int predictedLable = outLabel[0];
-
-        for (String currentKey : accountLableMap.keySet()) {
-            if (accountLableMap.get(currentKey) == predictedLable) {
-                return currentKey;
-            }
-        }
-        return null;
+        String accountId = accountLableMap.get(predictedLable);
+        ZimbraLog.soap.debug("***Predicted account is " + accountId + ".***");
+        return accountId;
     }
 
     private static void training() {
@@ -116,29 +110,38 @@ public class FaceAuth {
         String basePath = DbFaces.PATH_DIR_FACES;
         ZimbraLog.soap.debug("before looping on ");
         File folder = new File(basePath);
-        for (File fileInFolders : folder.listFiles()) {
-            int current = 1;
-            String accountId = null;
-            if (fileInFolders.isDirectory()) {
-                accountId = fileInFolders.getName();
-                for (String name : fileInFolders.list()) {
+        if (!folder.exists()) {
+            ZimbraLog.soap.debug("faces does not exist, so skipping training");
+            return;
+        }
+        File[] subFolders = folder.listFiles();
+        if (subFolders == null || subFolders.length < 1) {
+            ZimbraLog.soap.debug("faces does not exist, so skipping training");
+            return;
+        }
+        int current = 1;
+        for (File subFolder : subFolders) {
+            if (subFolder.isDirectory()) {
+                String accountId = null;
+                accountId = subFolder.getName();
+                for (String name : subFolder.list()) {
                     String filePath = basePath + "/" + accountId + "/" + name;
-                    ZimbraLog.soap.debug("File to be read : " + filePath);
+                    ZimbraLog.soap.debug("File to be read : " + filePath + ":" + current);
                     Mat readImage = Imgcodecs.imread(filePath, 0);
                     images.add(readImage);
                     labels.add(Integer.valueOf(current));
                 }
+                if (!accountLableMap.containsKey(current)) {
+                    accountLableMap.put(current, accountId);
+                }
+                current++;
             }
-            accountLableMap.put(accountId, current);
-            current++;
         }
-
         ZimbraLog.soap.debug("before mat of int");
         MatOfInt labelsMat = new MatOfInt();
         ZimbraLog.soap.debug("lables size : " + labels.size());
         labelsMat.fromList(labels);
         ZimbraLog.soap.debug("mat size : " + labelsMat.rows());
-
         ZimbraLog.soap.debug("starting training");
         efr.train(images, labelsMat);
         ZimbraLog.soap.debug("training finished, writing in file now");
