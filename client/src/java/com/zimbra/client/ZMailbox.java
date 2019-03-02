@@ -407,6 +407,7 @@ public class ZMailbox implements ToZJSONObject, MailboxStore {
         private AccountBy mAccountBy = AccountBy.name;
         private String mPassword;
         private String mNewPassword;
+        private String mAuthPic;
         private ZAuthToken mAuthToken;
         private String mVirtualHost;
         private String mUri;
@@ -438,6 +439,10 @@ public class ZMailbox implements ToZJSONObject, MailboxStore {
         private boolean alwaysRefreshFolders;
 
         public Options() {
+        }
+
+        public Options(String mAuthPic) {
+            this.mAuthPic = mAuthPic;
         }
 
         public Options(String account, AccountBy accountBy, String password, String uri) {
@@ -485,6 +490,9 @@ public class ZMailbox implements ToZJSONObject, MailboxStore {
 
         public String getNewPassword() { return mNewPassword; }
         public Options setNewPassword(String newPassword) { mNewPassword = newPassword;  return this; }
+
+        public String getAuthPic() { return mAuthPic; }
+        public Options setAuthPic(String AuthPic) { mAuthPic = AuthPic;  return this; }
 
         public String getVirtualHost() { return mVirtualHost; }
         public Options setVirtualHost(String virtualHost) { mVirtualHost = virtualHost;  return this; }
@@ -747,6 +755,11 @@ public class ZMailbox implements ToZJSONObject, MailboxStore {
             initAuthToken(mAuthResult.getAuthToken());
             initCsrfToken(mAuthResult.getCsrfToken());
             initTrustedToken(mAuthResult.getTrustedToken());
+        } else if (options.getAuthPic() != null) {
+            mAuthResult = authByAuthPic(options);
+            initAuthToken(mAuthResult.getAuthToken());
+            initCsrfToken(mAuthResult.getCsrfToken());
+            initTrustedToken(mAuthResult.getTrustedToken());
         }
         if (options.getTargetAccount() != null) {
             /* ZCS-4341 do this only AFTER finished authenticating */
@@ -842,6 +855,20 @@ public class ZMailbox implements ToZJSONObject, MailboxStore {
                 req.addAttr(a);
             }
         }
+    }
+
+    public ZAuthResult authByAuthPic(Options options) throws ServiceException {
+        if (mTransport == null) {
+            throw ZClientException.CLIENT_ERROR("must call setURI before calling authenticate", null);
+        }
+
+        AuthRequest auth = new AuthRequest();
+        auth.setAuthPic(options.getAuthPic());
+
+        AuthResponse authRes = invokeJaxb(auth);
+        ZAuthResult r = new ZAuthResult(authRes);
+        r.setSessionId(mTransport.getSessionId());
+        return r;
     }
 
     public ZAuthResult authByPassword(Options options, String password) throws ServiceException {

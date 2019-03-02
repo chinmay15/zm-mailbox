@@ -8128,7 +8128,7 @@ TODO: delete them permanently from here
 </attr>
 
 <attr id="1612" name="zimbraHttpMaxFormContentSize" type="integer" min="0" cardinality="single" optionalIn="globalConfig,server" flags="serverInherited" requiresRestart="mailbox" since="8.5.0">
-  <globalConfigValue>200000</globalConfigValue>
+  <globalConfigValue>1500000</globalConfigValue>
   <desc>The maximum allowed size in bytes for a HTTP form content in Jetty. Can be set to 0 to block all web form submission</desc>
 </attr>
 
